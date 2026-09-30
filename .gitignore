@@ -1,0 +1,27 @@
+# ESP-IDF build artifacts
+build/
+managed_components/
+dependencies.lock
+
+# SDK config backups
+sdkconfig.old
+sdkconfig.ci
+sdkconfig.defaults.*
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tuya device dumps - contain local keys (secrets)
+devices.json
+tinytuya.json
+tuya-raw.json
+snapshot.json

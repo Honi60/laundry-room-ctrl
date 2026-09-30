@@ -1,0 +1,13 @@
+{
+  "idf.extensionActivationMode": "always",
+  "idf.currentSetup": "/home/honi/esp/esp-idf",
+  "idf.flashType": "UART",
+  "idf.port": "/dev/ttyUSB0",
+  "idf.adapterTargetName": "esp32",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32"
+  },
+  "idf.openOcdConfigs": [
+    "board/esp32-wrover-kit-3.3v.cfg"
+  ]
+}

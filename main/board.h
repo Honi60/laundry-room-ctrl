@@ -1,0 +1,36 @@
+#pragma once
+
+#include "sdkconfig.h"
+
+/* Actuator pins */
+#define RELAY_GPIO          CONFIG_RELAY_GPIO
+#ifdef CONFIG_RELAY_ACTIVE_LOW
+#define RELAY_ACTIVE_LOW    1
+#else
+#define RELAY_ACTIVE_LOW    0
+#endif
+
+#define STATUS_LED_GPIO     CONFIG_STATUS_LED_GPIO
+#ifdef CONFIG_STATUS_LED_ACTIVE_LOW
+#define STATUS_LED_ACTIVE_LOW 1
+#else
+#define STATUS_LED_ACTIVE_LOW 0
+#endif
+
+#define BUTTON_GPIO         CONFIG_BUTTON_GPIO
+
+/* I2C */
+#define I2C_SDA_GPIO        CONFIG_I2C_SDA_GPIO
+#define I2C_SCL_GPIO        CONFIG_I2C_SCL_GPIO
+#define I2C_FREQ_HZ         CONFIG_I2C_FREQ_HZ
+
+/* LD2410 */
+#define LD2410_UART_PORT    CONFIG_LD2410_UART_PORT
+#define LD2410_TX_GPIO      CONFIG_LD2410_TX_GPIO
+#define LD2410_RX_GPIO      CONFIG_LD2410_RX_GPIO
+#define LD2410_BAUD_RATE    CONFIG_LD2410_BAUD_RATE
+
+/* IR / RF */
+#define IR_TX_GPIO          CONFIG_IR_TX_GPIO
+#define IR_RX_GPIO          CONFIG_IR_RX_GPIO
+#define RF_TX_GPIO          CONFIG_RF_TX_GPIO

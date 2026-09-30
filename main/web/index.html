@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laundry Room Controller</title>
+<link rel="icon" href="/laundary_room.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ffff00">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Laundry">
+<style>
+  body { font-family: sans-serif; margin: 1em; background: #f5f5f5; }
+  h1 { font-size: 1.4em; }
+  .card { background: #fff; border-radius: 8px; padding: 1em; margin: 1em 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5em; }
+  button { padding: 0.6em 1em; border: none; border-radius: 4px; background: #2196F3; color: #fff; cursor: pointer; }
+  button:hover { background: #1976D2; }
+  button.active { background: #4CAF50; }
+  button.warn { background: #f44336; }
+  label { display: block; margin: 0.5em 0 0.2em; font-size: 0.9em; }
+  input { width: 100%; box-sizing: border-box; padding: 0.4em; }
+  #status { white-space: pre-wrap; font-family: monospace; font-size: 0.9em; background: #eee; padding: 0.5em; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>Laundry Room Controller</h1>
+
+<div class="card">
+  <h2>Status</h2>
+  <div id="status">Loading...</div>
+</div>
+
+<div class="card">
+  <h2>Manual outputs</h2>
+  <div class="grid">
+    <button id="btn-relay" onclick="toggle('relay')">Relay (fan #1)</button>
+    <button id="btn-irfan" onclick="toggle('irfan')">IR fan</button>
+    <button id="btn-light" onclick="toggle('light')">Light</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Modes</h2>
+  <div class="grid">
+    <button id="btn-auto" onclick="toggleMode('auto')">Auto</button>
+    <button id="btn-fanauto" onclick="toggleMode('fanauto')">Fan auto</button>
+    <button id="btn-lightauto" onclick="toggleMode('lightauto')">Light auto</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Thresholds</h2>
+  <label>Light (lux)</label><input id="thr-light" type="number" step="1">
+  <label>Temperature (C)</label><input id="thr-temp" type="number" step="0.1">
+  <label>Humidity (%)</label><input id="thr-hum" type="number" step="0.1">
+  <button onclick="setThresholds()">Update thresholds</button>
+</div>
+
+<div class="card">
+  <h2>IR learning</h2>
+  <div class="grid">
+    <button onclick="learnIr(true)">Learn ON</button>
+    <button onclick="learnIr(false)">Learn OFF</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Wi-Fi</h2>
+  <label>SSID</label><input id="wifi-ssid" type="text">
+  <label>Password</label><input id="wifi-pass" type="password">
+  <button onclick="setWifi()">Save &amp; connect</button>
+</div>
+
+<div class="card">
+  <h2>Tuya switch</h2>
+  <label>IP (address only, no port)</label><input id="tuya-ip" type="text">
+  <label>Device ID</label><input id="tuya-dev" type="text">
+  <label>Local key (16 chars or 32 hex)</label><input id="tuya-key" type="text">
+  <label>Datapoint ID</label><input id="tuya-dpid" type="number">
+  <label>Datapoint ID 2 (optional - 2nd gang/lamp, 0 = off)</label><input id="tuya-dpid2" type="number">
+  <button onclick="setTuya()">Save Tuya settings</button>
+</div>
+
+<div class="card">
+  <button class="warn" onclick="factoryReset()">Factory reset</button>
+</div>
+
+<script>
+let state = {};
+
+async function updateStatus() {
+  try {
+    const r = await fetch('/api/status');
+    state = await r.json();
+    document.getElementById('status').textContent = JSON.stringify(state, null, 2);
+    setBtn('btn-relay', state.relay);
+    setBtn('btn-irfan', state.ir_fan);
+    setBtn('btn-light', state.light);
+    setBtn('btn-auto', state.auto);
+    setBtn('btn-fanauto', state.fan_auto);
+    setBtn('btn-lightauto', state.light_auto);
+  } catch(e) {
+    document.getElementById('status').textContent = 'Error: ' + e.message;
+  }
+}
+
+function setBtn(id, on) {
+  const b = document.getElementById(id);
+  b.classList.toggle('active', on);
+  b.textContent = b.textContent.replace(/:.*$/, '') + (on ? ': ON' : ': OFF');
+}
+
+async function sendControl(cmd, value) {
+  await fetch('/api/control', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({cmd: cmd, value: value})
+  });
+  setTimeout(updateStatus, 200);
+}
+
+function toggle(cmd) {
+  const key = cmd == 'relay' ? 'relay' : cmd == 'irfan' ? 'ir_fan' : 'light';
+  sendControl(cmd, state[key] ? 0 : 1);
+}
+
+function toggleMode(cmd) {
+  const key = cmd == 'auto' ? 'auto' : cmd == 'fanauto' ? 'fan_auto' : 'light_auto';
+  sendControl(cmd, state[key] ? 0 : 1);
+}
+
+async function postConfig(obj) {
+  await fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(obj)
+  });
+}
+
+function setThresholds() {
+  postConfig({
+    light_thr: parseFloat(document.getElementById('thr-light').value),
+    temp_thr: parseFloat(document.getElementById('thr-temp').value),
+    hum_thr: parseFloat(document.getElementById('thr-hum').value)
+  });
+}
+
+function setWifi() {
+  postConfig({
+    ssid: document.getElementById('wifi-ssid').value,
+    pass: document.getElementById('wifi-pass').value
+  });
+  setTimeout(updateStatus, 500);
+}
+
+function setTuya() {
+  const key = document.getElementById('tuya-key').value.trim();
+  if (key.length !== 16 && key.length !== 32) {
+    alert('Local key must be exactly 16 characters (or 32 hex). You entered ' + key.length + '.');
+    return;
+  }
+  postConfig({
+    tuya_ip: document.getElementById('tuya-ip').value,
+    tuya_dev: document.getElementById('tuya-dev').value,
+    tuya_key: document.getElementById('tuya-key').value.trim(),
+    tuya_dpid: parseInt(document.getElementById('tuya-dpid').value),
+    tuya_dpid2: parseInt(document.getElementById('tuya-dpid2').value) || 0
+  });
+  setTimeout(updateStatus, 500);
+}
+
+function learnIr(on) {
+  sendControl(on ? 'learnir_on' : 'learnir_off', 0);
+  alert(on ? 'Learning IR ON: press the remote ON button' : 'Learning IR OFF: press the remote OFF button');
+}
+
+function factoryReset() {
+  if (confirm('Erase all settings and reboot?')) {
+    sendControl('factory', 0);
+  }
+}
+
+async function loadConfig() {
+  try {
+    const c = await (await fetch('/api/config')).json();
+    document.getElementById('thr-light').value = c.light_thr;
+    document.getElementById('thr-temp').value = c.temp_thr;
+    document.getElementById('thr-hum').value = c.hum_thr;
+    document.getElementById('wifi-ssid').value = c.ssid;
+    document.getElementById('tuya-ip').value = c.tuya_ip;
+    document.getElementById('tuya-dev').value = c.tuya_dev;
+    document.getElementById('tuya-key').value = c.tuya_key;
+    document.getElementById('tuya-dpid').value = c.tuya_dpid;
+    document.getElementById('tuya-dpid2').value = c.tuya_dpid2;
+  } catch(e) {}
+}
+
+setInterval(updateStatus, 2000);
+updateStatus();
+loadConfig();
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+menu "Laundry Room Controller"
+
+    choice BOARD_VARIANT
+        prompt "Relay board variant"
+        default BOARD_GREEN_V10
+        help
+            Select the ESP32-Relay-X1 board variant.
+            Green v1.0 uses GPIO16/GPIO23; blue v1.1 uses GPIO19/GPIO2.
+
+        config BOARD_GREEN_V10
+            bool "Green v1.0 (GPIO16 relay, GPIO23 LED)"
+
+        config BOARD_BLUE_V11
+            bool "Blue v1.1 (GPIO19 relay, GPIO2 LED)"
+    endchoice
+
+    config RELAY_GPIO
+        int "Relay GPIO"
+        default 16 if BOARD_GREEN_V10
+        default 19 if BOARD_BLUE_V11
+        help
+            On-board relay controlling fan #1.
+
+    config RELAY_ACTIVE_LOW
+        bool "Relay active-low"
+        default n
+        help
+            Set if the relay turns on when the GPIO is driven low.
+
+    config STATUS_LED_GPIO
+        int "Status LED GPIO"
+        default 23 if BOARD_GREEN_V10
+        default 2 if BOARD_BLUE_V11
+        help
+            On-board status LED.
+
+    config STATUS_LED_ACTIVE_LOW
+        bool "Status LED active-low"
+        default y
+        help
+            Set if the LED is on when the GPIO is driven low.
+
+    config BUTTON_GPIO
+        int "User button GPIO"
+        default 0
+        help
+            On-board boot button. Must only be used as an input.
+
+    config I2C_SDA_GPIO
+        int "I2C SDA GPIO"
+        default 21
+        help
+            SDA for VEML7700, AHT20 and BMP280.
+
+    config I2C_SCL_GPIO
+        int "I2C SCL GPIO"
+        default 22
+        help
+            SCL for VEML7700, AHT20 and BMP280.
+
+    config I2C_FREQ_HZ
+        int "I2C bus frequency"
+        default 100000
+        range 50000 400000
+
+    config LD2410_UART_PORT
+        int "LD2410 UART port"
+        default 2
+
+    config LD2410_TX_GPIO
+        int "LD2410 TX GPIO (ESP -> LD2410 RX)"
+        default 19
+        help
+            GPIO17 on the bench board failed output tests, so TX moved to 19.
+            Only needed for config commands; reports arrive on RX regardless.
+
+    config LD2410_RX_GPIO
+        int "LD2410 RX GPIO (ESP <- LD2410 TX)"
+        default 18
+
+    config LD2410_BAUD_RATE
+        int "LD2410 baud rate"
+        default 115200
+        help
+            LD2410C ships at 256000, LD2410S at 115200.
+
+    config IR_TX_GPIO
+        int "IR TX GPIO"
+        default 25
+        help
+            RMT channel for the IR LED.
+
+    config IR_RX_GPIO
+        int "IR RX GPIO"
+        default 26
+        help
+            RMT channel for the IR receiver.
+
+    config RF_TX_GPIO
+        int "RF TX / SYN115 data GPIO"
+        default 27
+        help
+            Future RMT/ASK RF output.
+
+endmenu
